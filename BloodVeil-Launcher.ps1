@@ -51,18 +51,72 @@ $launchButton.Enabled = $false
 $launchButton.Font = New-Object System.Drawing.Font("Arial", 10, [System.Drawing.FontStyle]::Bold)
 $form.Controls.Add($launchButton)
 
+# Function to find Java
+function Find-Java {
+    # Try PATH first
+    $javaCmd = Get-Command javaw -ErrorAction SilentlyContinue
+    if ($javaCmd) { return $javaCmd.Source }
+    
+    $javaCmd = Get-Command java -ErrorAction SilentlyContinue
+    if ($javaCmd) { return $javaCmd.Source }
+    
+    # Search common installation paths
+    $searchPaths = @(
+        "C:\Program Files\Java",
+        "C:\Program Files (x86)\Java",
+        "C:\Program Files\Eclipse Adoptium",
+        "C:\Program Files\AdoptOpenJDK",
+        "C:\Program Files\Temurin",
+        "C:\Program Files\Zulu",
+        "C:\Program Files\Microsoft",
+        "${env:ProgramFiles}\Java",
+        "${env:ProgramFiles(x86)}\Java",
+        "${env:LOCALAPPDATA}\Programs"
+    )
+    
+    foreach ($basePath in $searchPaths) {
+        if (Test-Path $basePath) {
+            Get-ChildItem $basePath -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                $javaw = Join-Path $_.FullName "bin\javaw.exe"
+                $java = Join-Path $_.FullName "bin\java.exe"
+                
+                if (Test-Path $javaw) { return $javaw }
+                if (Test-Path $java) { return $java }
+            }
+        }
+    }
+    
+    # Check JAVA_HOME
+    $javaHome = [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
+    if ($javaHome -and (Test-Path "$javaHome\bin\javaw.exe")) {
+        return "$javaHome\bin\javaw.exe"
+    }
+    
+    return $null
+}
+
 # Launch button handler
 $launchButton.Add_Click({
+    $javaPath = Find-Java
+    
+    if (!$javaPath) {
+        $result = [System.Windows.Forms.MessageBox]::Show(
+            "Java 11+ not found!`n`nWould you like to download Java now?`n`n(You'll need to restart the launcher after installing)",
+            "Java Required",
+            "YesNo",
+            "Question"
+        )
+        if ($result -eq "Yes") {
+            Start-Process "https://adoptium.net/temurin/releases/?version=11"
+        }
+        return
+    }
+    
     try {
-        Start-Process -FilePath "javaw" -ArgumentList "-jar `"$clientJar`"" -WorkingDirectory $installDir -WindowStyle Hidden -ErrorAction Stop
+        Start-Process -FilePath $javaPath -ArgumentList "-jar `"$clientJar`"" -WorkingDirectory $installDir -WindowStyle Hidden
         $form.Close()
     } catch {
-        try {
-            Start-Process -FilePath "java" -ArgumentList "-jar `"$clientJar`"" -WorkingDirectory $installDir
-            $form.Close()
-        } catch {
-            [System.Windows.Forms.MessageBox]::Show("Cannot launch game. Java 11+ is required.`n`nDownload from: https://adoptium.net/", "Java Not Found", "OK", "Error")
-        }
+        [System.Windows.Forms.MessageBox]::Show("Failed to launch game:`n$($_.Exception.Message)", "Launch Error", "OK", "Error")
     }
 })
 
