@@ -7,8 +7,8 @@ Add-Type -AssemblyName System.Drawing
 $installDir = Join-Path $env:USERPROFILE "BloodVeil"
 $clientJar = Join-Path $installDir "Bloodveil.jar"
 $cacheDir = Join-Path $installDir "cache"
-$clientUrl = "https://github.com/DwightM95/BloodVeil---Beta/releases/download/v%201.0/Bloodveil.jar"
-$cacheUrl = "https://github.com/DwightM95/BloodVeil---Beta/releases/download/v%201.0/cache.zip"
+$clientUrl = "https://github.com/DwightM95/BloodVeil---Beta/releases/download/v1.0/Bloodveil.jar"
+$cacheUrl = "https://github.com/DwightM95/BloodVeil---Beta/releases/download/v1.0/cache.zip"
 $cacheZip = Join-Path $installDir "cache.zip"
 
 $form = New-Object System.Windows.Forms.Form
