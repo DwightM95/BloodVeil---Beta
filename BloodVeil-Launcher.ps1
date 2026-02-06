@@ -1,10 +1,6 @@
-@echo off
-title BloodVeil Launcher
-powershell -ExecutionPolicy Bypass -NoProfile -File "%~dp0BloodVeil-Launcher.ps1"
-if errorlevel 1 pause
-exit
-
 # BloodVeil Auto-Installer and Launcher
+# Double-click this file or right-click → "Run with PowerShell"
+
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
@@ -68,7 +64,6 @@ function Download-File {
         $syncHash = [hashtable]::Synchronized(@{})
         $syncHash.Form = $form
         $syncHash.ProgressBar = $progressBar
-        $syncHash.StatusLabel = $statusLabel
         
         Register-ObjectEvent -InputObject $wc -EventName DownloadProgressChanged -Action {
             $syncHash.ProgressBar.Value = $EventArgs.ProgressPercentage
@@ -85,7 +80,7 @@ function Download-File {
         
         $wc.Dispose()
         
-        if ($task. IsFaulted) {
+        if ($task.IsFaulted) {
             throw $task.Exception
         }
         
