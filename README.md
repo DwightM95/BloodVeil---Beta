@@ -1,46 +1,78 @@
-# Bloodveil Client
+# BloodVeil - Download and Play
 
-Download and play Bloodveil RSPS!
+**Simple 3-Step Installation:**
 
-## Installation
+1. **Download** the launcher: [BloodVeil-Launcher.bat](https://github.com/DwightM95/BloodVeil---Beta/releases/download/v1.0/BloodVeil-Launcher.bat)
+2. **Double-click** the file you downloaded
+3. **Wait** while it automatically downloads and installs the game (first run only)
 
-1. **Download Client**
-   - Click **Code** → **Download ZIP**
-   - Extract to a folder
+That's it! The launcher handles everything automatically.
 
-2. **Download Cache** (Required - One time)
-   - Go to [Releases](https://github.com/DwightM95/BloodVeil---Beta/releases)
-   - Download **cache.zip**
-   - Extract cache.zip into the same folder as Bloodveil.jar
+---
 
-3. **Play**
-   - Double-click **Run-Bloodveil.bat**
+## What Happens on First Run?
+
+The launcher will:
+- Create a game folder in your Documents
+- Download the client (54 MB)
+- Download the game cache (328 MB)  
+- Extract everything automatically
+- Launch the game when ready
+
+**First launch takes 2-5 minutes depending on your internet speed.** After that, the game launches instantly!
+
+---
 
 ## Requirements
 
-- [Java 11+](https://adoptium.net/) installed
-- Windows 7 or higher
-- ~400 MB disk space
+- **Windows 7 or newer**
+- **Java 11 or higher** - [Download here](https://adoptium.net/) if you don't have it
+- **500 MB free disk space**
+- **Internet connection** (first run only)
 
-## Server
+---
 
-**IP:** 66.179.191.115:52778
+## Troubleshooting
 
-## Folder Structure
+**"Java Not Found" error?**
+- Download and install Java 11+ from [Adoptium](https://adoptium.net/)
+- Restart your computer after installing
 
-After setup, your folder should look like:
+**Download fails?**
+- Check your internet connection
+- Temporarily disable antivirus/firewall
+- Try running as Administrator (right-click → Run as administrator)
+
+**Game won't launch?**
+- Make sure Java is installed
+- Check that you have 500 MB of free disk space
+- Try deleting the `BloodVeil` folder in your user directory and run the launcher again
+
+---
+
+## Server Information
+
+- **IP:** 66.179.191.115
+- **Port:** 52778
+- **Status:** Online 24/7
+
+---
+
+## Manual Installation (Advanced)
+
+If the launcher doesn't work, you can manually download:
+1. [Bloodveil.jar](https://github.com/DwightM95/BloodVeil---Beta/releases/download/v1.0/Bloodveil.jar) (54 MB)
+2. [cache.zip](https://github.com/DwightM95/BloodVeil---Beta/releases/download/v1.0/cache.zip) (328 MB)
+
+Extract cache.zip in the same folder as Bloodveil.jar, then run:
 ```
-📁 Bloodveil
-├── 📄 Bloodveil.jar
-├── 📄 Run-Bloodveil.bat
-├── 📄 README.md
-└── 📁 cache/
-    ├── 📁 etc/
-    ├── 📁 osrs/
-    ├── 📁 media_archives/
-    └── ...
+java -jar Bloodveil.jar
 ```
 
-## Support
+---
 
-Need help? Join our Discord!
+## Game Files Location
+
+The game installs to: `C:\Users\YourName\BloodVeil\`
+
+To completely uninstall, just delete that folder.
