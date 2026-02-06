@@ -5,9 +5,12 @@ Add-Type -AssemblyName System.Drawing
 $installDir = Join-Path $env:USERPROFILE "BloodVeil"
 $clientJar = Join-Path $installDir "Bloodveil.jar"
 $cacheDir = Join-Path $installDir "cache"
+$jreDir = Join-Path $installDir "jre"
 $clientUrl = "https://github.com/DwightM95/BloodVeil---Beta/releases/download/V1.0/Bloodveil.jar"
 $cacheUrl = "https://github.com/DwightM95/BloodVeil---Beta/releases/download/V1.0/cache.zip"
+$jreUrl = "https://api.adoptium.net/v3/binary/latest/11/ga/windows/x64/jre/hotspot/normal/eclipse"
 $cacheZip = Join-Path $installDir "cache.zip"
+$jreZip = Join-Path $installDir "jre.zip"
 
 # Create install directory
 if (!(Test-Path $installDir)) {
@@ -53,43 +56,33 @@ $form.Controls.Add($launchButton)
 
 # Function to find Java
 function Find-Java {
-    # Try PATH first
+    # Check bundled JRE first
+    $bundledJava = Join-Path $jreDir "bin\javaw.exe"
+    if (Test-Path $bundledJava) { return $bundledJava }
+    
+    # Try PATH
     $javaCmd = Get-Command javaw -ErrorAction SilentlyContinue
     if ($javaCmd) { return $javaCmd.Source }
     
     $javaCmd = Get-Command java -ErrorAction SilentlyContinue
     if ($javaCmd) { return $javaCmd.Source }
     
-    # Search common installation paths
+    # Search common paths
     $searchPaths = @(
         "C:\Program Files\Java",
         "C:\Program Files (x86)\Java",
         "C:\Program Files\Eclipse Adoptium",
         "C:\Program Files\AdoptOpenJDK",
         "C:\Program Files\Temurin",
-        "C:\Program Files\Zulu",
-        "C:\Program Files\Microsoft",
-        "${env:ProgramFiles}\Java",
-        "${env:ProgramFiles(x86)}\Java",
-        "${env:LOCALAPPDATA}\Programs"
+        "$env:ProgramFiles\Java",
+        "$env:LOCALAPPDATA\Programs"
     )
     
     foreach ($basePath in $searchPaths) {
         if (Test-Path $basePath) {
-            Get-ChildItem $basePath -Directory -ErrorAction SilentlyContinue | ForEach-Object {
-                $javaw = Join-Path $_.FullName "bin\javaw.exe"
-                $java = Join-Path $_.FullName "bin\java.exe"
-                
-                if (Test-Path $javaw) { return $javaw }
-                if (Test-Path $java) { return $java }
-            }
+            $javaExes = Get-ChildItem $basePath -Recurse -Filter "javaw.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($javaExes) { return $javaExes.FullName }
         }
-    }
-    
-    # Check JAVA_HOME
-    $javaHome = [Environment]::GetEnvironmentVariable("JAVA_HOME", "Machine")
-    if ($javaHome -and (Test-Path "$javaHome\bin\javaw.exe")) {
-        return "$javaHome\bin\javaw.exe"
     }
     
     return $null
@@ -100,15 +93,7 @@ $launchButton.Add_Click({
     $javaPath = Find-Java
     
     if (!$javaPath) {
-        $result = [System.Windows.Forms.MessageBox]::Show(
-            "Java 11+ not found!`n`nWould you like to download Java now?`n`n(You'll need to restart the launcher after installing)",
-            "Java Required",
-            "YesNo",
-            "Question"
-        )
-        if ($result -eq "Yes") {
-            Start-Process "https://adoptium.net/temurin/releases/?version=11"
-        }
+        [System.Windows.Forms.MessageBox]::Show("Could not find Java. Please restart the launcher.", "Error", "OK", "Error")
         return
     }
     
@@ -146,12 +131,76 @@ $form.Add_Shown({
         }
     } else {
         $progressBar.Value = 30
+    $needsJava = !(Find-Java)
+    
+    $progress = 0
+    
+    # Download Java if needed
+    if ($needsJava) {
+        try {
+            $statusLabel.Text = "Downloading Java (45 MB)..."
+            $form.Refresh()
+            
+            $wc = New-Object System.Net.WebClient
+            $wc.DownloadFile($jreUrl, $jreZip)
+            $wc.Dispose()
+            
+            $statusLabel.Text = "Installing Java..."
+            $progress = 15
+            $progressBar.Value = $progress
+            $form.Refresh()
+            
+            Expand-Archive -Path $jreZip -DestinationPath $installDir -Force
+            
+            # Find the extracted JRE folder and rename it
+            $extractedJre = Get-ChildItem $installDir -Directory | Where-Object { $_.Name -like "jdk*" -or $_.Name -like "jre*" } | Select-Object -First 1
+            if ($extractedJre) {
+                if (Test-Path $jreDir) { Remove-Item $jreDir -Recurse -Force }
+                Move-Item $extractedJre.FullName $jreDir
+            }
+            
+            Remove-Item $jreZip -Force -ErrorAction SilentlyContinue
+            
+            $progress = 20
+            $progressBar.Value = $progress
+            
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Failed to download Java:`n$($_.Exception.Message)", "Error", "OK", "Error")
+            $form.Close()
+            return
+        }
+    } else {
+        $progress = 20
+        $progressBar.Value = $progress
     }
     
+    # Download client
+    if ($needsClient) {
+        try {
+            $statusLabel.Text = "Downloading client (54 MB)..."
+            $form.Refresh()
+            
+            $wc = New-Object System.Net.WebClient
+            $wc.DownloadFile($clientUrl, $clientJar)
+            $wc.Dispose()
+            
+            $progress = 40
+            $progressBar.Value = $progress
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show("Failed to download client:`n$($_.Exception.Message)", "Download Error", "OK", "Error")
+            $form.Close()
+            return
+        }
+    } else {
+        $progress = 40
+        $progressBar.Value = $progress
+    }
+    
+    # Download and extract cache
     if ($needsCache) {
         try {
             $statusLabel.Text = "Downloading game cache (328 MB)..."
-            $progressBar.Value = 40
+            $progressBar.Value = 50
             $form.Refresh()
             
             $wc = New-Object System.Net.WebClient
@@ -159,23 +208,5 @@ $form.Add_Shown({
             $wc.Dispose()
             
             $statusLabel.Text = "Extracting cache files..."
-            $progressBar.Value = 70
-            $form.Refresh()
-            
-            Expand-Archive -Path $cacheZip -DestinationPath $installDir -Force
-            Remove-Item $cacheZip -Force -ErrorAction SilentlyContinue
-            
-        } catch {
-            [System.Windows.Forms.MessageBox]::Show("Failed to download/extract cache:`n$($_.Exception.Message)", "Error", "OK", "Error")
-            $form.Close()
-            return
-        }
-    }
-    
-    $statusLabel.Text = "Ready to play!"
-    $progressBar.Value = 100
-    $launchButton.Enabled = $true
-    $launchButton.Focus()
-})
-
+            $progressBar.Value = 8
 [void]$form.ShowDialog()
