@@ -2,7 +2,11 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$installDir = Join-Path $env:USERPROFILE "BloodVeil"
+$installDir = if ($env:OS -match "Windows") { 
+    Join-Path $env:APPDATA "BloodVeil"
+} else { 
+    Join-Path $env:HOME "BloodVeil" 
+}
 $clientJar = Join-Path $installDir "Bloodveil.jar"
 $cacheDir = Join-Path $installDir "cache"
 $jreDir = Join-Path $installDir "jre"
